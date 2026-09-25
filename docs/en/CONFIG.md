@@ -115,6 +115,9 @@ The following fields can be used in templates or `[[apps]]`. Each field drives b
 | `product` | `Build.PRODUCT` | — (no system property) | Codename (e.g. xuanyuan); Build field only |
 | `hardware` | `Build.HARDWARE` | `ro.hardware` | Hardware name (e.g. qcom); no partition variants |
 | `board` | `Build.BOARD` | `ro.product.board` | Board name (e.g. kalama); no partition variants |
+| `soc_platform` | — (properties only) | `ro.board.platform`, `ro.mediatek.platform`, `ro.vendor.qti.soc_name`, `ro.hardware.chipname`, `ro.chipname` | SoC platform codename (e.g. kalama / pineapple / sun / mt6989); falls back to `board` when unset |
+| `soc_model` | `Build.SOC_MODEL` | `ro.soc.model`, `ro.vendor.soc.model`, `ro.vendor.qti.soc_model`, `ro.vendor.qti.soc_id` | SoC model (e.g. SM8650 / MT6989) |
+| `soc_manufacturer` | — (properties only) | `ro.soc.manufacturer` | SoC vendor (e.g. Qualcomm / MediaTek) |
 | `fingerprint` | `Build.FINGERPRINT` | `ro.build.fingerprint` | Fingerprint |
 | `build_id` | `Build.ID` | `ro.build.id`, `ro.system.build.id`, `ro.vendor.build.id`, `ro.product.build.id` | Build ID (e.g. UKQ1.230917.001) |
 | `characteristics` | — (properties only) | `ro.build.characteristics` | Characteristics (e.g. tablet) |

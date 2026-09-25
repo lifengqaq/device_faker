@@ -17,7 +17,9 @@ export interface DeviceFakerFormData {
   product: string
   hardware: string
   board: string
+  soc_platform: string
   soc_model: string
+  soc_manufacturer: string
   name: string
   marketname: string
   fingerprint: string
@@ -64,7 +66,9 @@ function createEmptyFormData(): DeviceFakerFormData {
     product: '',
     hardware: '',
     board: '',
+    soc_platform: '',
     soc_model: '',
+    soc_manufacturer: '',
     name: '',
     marketname: '',
     fingerprint: '',
@@ -93,7 +97,9 @@ export function formDataToTemplate(formData: DeviceFakerFormData, base?: Templat
     product: formData.product,
     hardware: formData.hardware,
     board: formData.board,
+    soc_platform: formData.soc_platform,
     soc_model: formData.soc_model,
+    soc_manufacturer: formData.soc_manufacturer,
     fingerprint: formData.fingerprint,
   }
 
@@ -199,7 +205,9 @@ export function templateToFormData(template: Template): DeviceFakerFormData {
     product: template.product || '',
     hardware: template.hardware || '',
     board: template.board || '',
+    soc_platform: template.soc_platform || '',
     soc_model: template.soc_model || '',
+    soc_manufacturer: template.soc_manufacturer || '',
     name: template.name || '',
     marketname: template.marketname || '',
     fingerprint: template.fingerprint || '',
@@ -227,7 +235,9 @@ export function appConfigToFormData(appConfig: AppConfig): DeviceFakerFormData {
     product: appConfig.product || '',
     hardware: appConfig.hardware || '',
     board: appConfig.board || '',
+    soc_platform: appConfig.soc_platform || '',
     soc_model: appConfig.soc_model || '',
+    soc_manufacturer: appConfig.soc_manufacturer || '',
     name: appConfig.name || '',
     marketname: appConfig.marketname || '',
     fingerprint: appConfig.fingerprint || '',
@@ -256,7 +266,9 @@ export function formDataToAppConfig(formData: DeviceFakerFormData, packageName: 
     product: formData.product,
     hardware: formData.hardware,
     board: formData.board,
+    soc_platform: formData.soc_platform,
     soc_model: formData.soc_model,
+    soc_manufacturer: formData.soc_manufacturer,
     name: formData.name,
     marketname: formData.marketname,
     fingerprint: formData.fingerprint,

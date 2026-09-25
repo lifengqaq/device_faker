@@ -82,6 +82,12 @@ function normalizeDeviceInfoFields(source: UnknownRecord): Partial<DeviceInfo> {
   const socModel = asOptionalString(source.soc_model)
   if (socModel !== undefined) normalized.soc_model = socModel
 
+  const socPlatform = asOptionalString(source.soc_platform)
+  if (socPlatform !== undefined) normalized.soc_platform = socPlatform
+
+  const socManufacturer = asOptionalString(source.soc_manufacturer)
+  if (socManufacturer !== undefined) normalized.soc_manufacturer = socManufacturer
+
   const name = asOptionalString(source.name)
   if (name !== undefined) normalized.name = name
 

@@ -52,8 +52,22 @@
     <el-input v-model="formData.board" :placeholder="t('templates.placeholders.board')" />
   </el-form-item>
 
+  <el-form-item :label="t('templates.fields.soc_platform')">
+    <el-input
+      v-model="formData.soc_platform"
+      :placeholder="t('templates.placeholders.soc_platform')"
+    />
+  </el-form-item>
+
   <el-form-item :label="t('templates.fields.soc_model')">
     <el-input v-model="formData.soc_model" :placeholder="t('templates.placeholders.soc_model')" />
+  </el-form-item>
+
+  <el-form-item :label="t('templates.fields.soc_manufacturer')">
+    <el-input
+      v-model="formData.soc_manufacturer"
+      :placeholder="t('templates.placeholders.soc_manufacturer')"
+    />
   </el-form-item>
 
   <el-collapse>

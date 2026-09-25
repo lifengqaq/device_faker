@@ -1,5 +1,12 @@
 # 📝更新日志
 
+## 🚧 [未发布]
+
+### 🆕 新功能
+- 🧬 新增完整 SoC 身份伪装：`soc_model` / `soc_platform` / `soc_manufacturer` 三个字段整族写入 AOSP 与高通/联发科厂商别名（`ro.board.platform`、`ro.mediatek.platform`、`ro.vendor.qti.soc_*`、`ro.hardware.chipname`、`ro.chipname`、`ro.soc.*` 等），修复「机型已伪装但游戏仍读回真机 SoC 导致锁帧/低画质」
+- ↩️ `soc_platform` 未设置时自动回退 `board`
+- 🛠️ CLI 与 WebUI 同步支持导入/编辑新增 SoC 字段
+
 ## ⬆️[v1.4.0 → v1.5.0] - 2026-08-01
 
 ### 🆕 新功能

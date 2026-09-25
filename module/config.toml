@@ -20,6 +20,18 @@
 # ============================================================
 # 定义常用机型模板，可以直接在模板中指定包名列表
 
+# ── SoC 伪装字段（游戏开高帧率的关键）────────────────────────────
+# hardware  → ro.hardware          （SoC 厂商硬件名，如 qcom / mt6989）
+# board     → ro.product.board     （主板平台代号，同时回退写入 ro.board.platform）
+# soc_platform    → ro.board.platform 平台族（kalama / pineapple / sun / mt6989 …）
+# soc_model       → ro.soc.model 型号族 + Build.SOC_MODEL（SM8650 / MT6989 …）
+# soc_manufacturer→ ro.soc.manufacturer（Qualcomm / MediaTek / Samsung …）
+#
+# 三个 soc_* 字段都会「整族写入」多个别名 key（ro.vendor.qti.* / ro.mediatek.* /
+# ro.hardware.chipname / ro.chipname 等），避免游戏从任一别名读回真机 SoC 后锁帧。
+# 若真机与目标 SoC 跨厂商（如真机联发科、伪装成骁龙），必须
+# companion_resetprop = true，否则新出现的别名 key 无法在纯 COW 模式下创建。
+
 [templates.redmagic_11_pro]
 packages = [
     "com.mobilelegends.mi",
@@ -33,6 +45,11 @@ brand = "REDMAGIC"
 model = "NX809J"
 device = "REDMAGIC 11 PRO"
 product = "NX809J"
+hardware = "qcom"
+board = "sun"
+soc_platform = "sun"
+soc_model = "SM8850"
+soc_manufacturer = "Qualcomm"
 fingerprint = "REDMAGIC/NX809J-UN/NX809J:16/BP2A.250605.031.A3/20251017.000000:user/release-keys"
 build_id = "BP2A.250605.031.A3"
 
@@ -43,6 +60,11 @@ brand = "OnePlus"
 model = "PLK110"
 device = "PLK110"
 product = "PLK110"
+hardware = "qcom"
+board = "canoe"
+soc_platform = "canoe"
+soc_model = "SM8850"
+soc_manufacturer = "Qualcomm"
 fingerprint = ""
 packages = [ "com.tencent.tmgp.pubgmhd", "com.tencent.tmgp.supercell.clashofclans", "com.tencent.tmgp.speedmobile" ]
 
@@ -52,6 +74,11 @@ brand = "VIVO"
 model = "V2505A"
 device = "V2505A"
 product = "V2505A"
+hardware = "qcom"
+board = "canoe"
+soc_platform = "canoe"
+soc_model = "SM8850"
+soc_manufacturer = "Qualcomm"
 fingerprint = ""
 packages = [ "com.tencent.tmgp.sgame", "com.tencent.tmgp.codev" ]
 

@@ -160,6 +160,50 @@ fn delete_build_family(delete_props: &mut Vec<String>, suffix: &str) {
     }
 }
 
+// ── SoC 身份族 ──────────────────────────────────────────────────────────────
+//
+// 游戏/检测程序判定「这台机器到底是什么 SoC」很少只读一个 key：AOSP 只保证
+// `ro.soc.model`（→ Build.SOC_MODEL），而高通/联发科的 ROM 还各自导出平台代号与
+// 厂商别名。任何一处仍指向真机 SoC，检测函数就会取到真实 SoC，进而套用低画质 /
+// 锁 60 帧策略 —— 这正是「机型伪装了但游戏仍不开高帧率」的根本原因。
+//
+// 因此 soc_model / soc_platform / soc_manufacturer 三个字段都整族写入，覆盖社区
+// 与厂商 ROM 的常见读法；不存在的 key 由 COW 插入，或在 companion_resetprop 模式
+// 下由 resetprop 创建。
+
+/// 平台代号族：`ro.board.platform` 是绝大多数游戏判 SoC 的主 key
+/// （kalama=骁龙8Gen2 / pineapple=8Gen3 / sun=8Elite / mt6989=天玑9300）。
+const SOC_PLATFORM_KEYS: &[&str] = &[
+    "ro.board.platform",
+    "ro.mediatek.platform",
+    "ro.vendor.qti.soc_name",
+    "ro.hardware.chipname",
+    "ro.chipname",
+];
+
+/// 型号族：AOSP 标准键 + 高通/联发科厂商别名。
+const SOC_MODEL_KEYS: &[&str] = &[
+    "ro.soc.model",
+    "ro.vendor.soc.model",
+    "ro.vendor.qti.soc_model",
+    "ro.vendor.qti.soc_id",
+];
+
+/// 厂商族，AOSP 只导出 `ro.soc.manufacturer`。
+const SOC_MANUFACTURER_KEYS: &[&str] = &["ro.soc.manufacturer"];
+
+fn insert_soc_family(map: &mut HashMap<String, String>, keys: &[&str], value: &str) {
+    for key in keys {
+        map.insert((*key).to_string(), value.to_string());
+    }
+}
+
+fn delete_soc_family(delete_props: &mut Vec<String>, keys: &[&str]) {
+    for key in keys {
+        delete_props.push((*key).to_string());
+    }
+}
+
 /// custom_props 中已知属性族的 key 自动整族展开；未知 key 不展开，
 /// 随后的精确 key 写入仍具有最高优先级。
 fn expand_known_custom_property(map: &mut HashMap<String, String>, key: &str, value: &str) {
@@ -177,6 +221,9 @@ fn expand_known_custom_property(map: &mut HashMap<String, String>, key: &str, va
         "ro.build.version.incremental" => insert_build_family(map, "version.incremental", value),
         "ro.build.type" => insert_build_family(map, "type", value),
         "ro.build.tags" => insert_build_family(map, "tags", value),
+        "ro.soc.model" => insert_soc_family(map, SOC_MODEL_KEYS, value),
+        "ro.board.platform" => insert_soc_family(map, SOC_PLATFORM_KEYS, value),
+        "ro.soc.manufacturer" => insert_soc_family(map, SOC_MANUFACTURER_KEYS, value),
         _ => {}
     }
 }
@@ -206,9 +253,15 @@ pub struct DeviceTemplate {
     pub hardware: Option<String>,
     #[serde(default)]
     pub board: Option<String>,
-    /// SoC 型号伪装（映射 Build.SOC_MODEL + ro.soc.model，单属性无分区副本）
+    /// SoC 型号伪装（映射 Build.SOC_MODEL + `ro.soc.model` 型号族）
     #[serde(default)]
     pub soc_model: Option<String>,
+    /// SoC 平台代号伪装（映射 `ro.board.platform` 平台族，如 kalama / pineapple / mt6989）
+    #[serde(default)]
+    pub soc_platform: Option<String>,
+    /// SoC 厂商伪装（映射 `ro.soc.manufacturer`，如 Qualcomm / MediaTek）
+    #[serde(default)]
+    pub soc_manufacturer: Option<String>,
     #[serde(default)]
     pub fingerprint: Option<String>,
     #[serde(default)]
@@ -270,9 +323,15 @@ pub struct AppConfig {
     pub hardware: Option<String>,
     #[serde(default)]
     pub board: Option<String>,
-    /// SoC 型号伪装（映射 Build.SOC_MODEL + ro.soc.model，单属性无分区副本）
+    /// SoC 型号伪装（映射 Build.SOC_MODEL + `ro.soc.model` 型号族）
     #[serde(default)]
     pub soc_model: Option<String>,
+    /// SoC 平台代号伪装（映射 `ro.board.platform` 平台族，如 kalama / pineapple / mt6989）
+    #[serde(default)]
+    pub soc_platform: Option<String>,
+    /// SoC 厂商伪装（映射 `ro.soc.manufacturer`，如 Qualcomm / MediaTek）
+    #[serde(default)]
+    pub soc_manufacturer: Option<String>,
     #[serde(default)]
     pub fingerprint: Option<String>,
     #[serde(default)]
@@ -363,6 +422,8 @@ impl Config {
                 hardware: app.hardware.clone(),
                 board: app.board.clone(),
                 soc_model: app.soc_model.clone(),
+                soc_platform: app.soc_platform.clone(),
+                soc_manufacturer: app.soc_manufacturer.clone(),
                 fingerprint: app.fingerprint.clone(),
                 build_id: app.build_id.clone(),
                 display_id: app.display_id.clone(),
@@ -399,6 +460,8 @@ impl Config {
                 hardware: template.hardware.clone(),
                 board: template.board.clone(),
                 soc_model: template.soc_model.clone(),
+                soc_platform: template.soc_platform.clone(),
+                soc_manufacturer: template.soc_manufacturer.clone(),
                 fingerprint: template.fingerprint.clone(),
                 build_id: template.build_id.clone(),
                 display_id: template.display_id.clone(),
@@ -473,10 +536,27 @@ impl Config {
             map.insert("ro.product.board".to_string(), board);
         }
 
-        // Build.SOC_MODEL 的属性来源是 ro.soc.model（单一属性，同 hardware/board
-        // 形态，无分区变体）。
+        // Build.SOC_MODEL 的属性来源是 ro.soc.model，但游戏判 SoC 还会读平台代号
+        // 与厂商别名，故这里整族写入（见 SOC_*_KEYS 注释）。
         if let Some(soc_model) = field_value(&merged.soc_model) {
-            map.insert("ro.soc.model".to_string(), soc_model);
+            insert_soc_family(&mut map, SOC_MODEL_KEYS, &soc_model);
+        }
+
+        // 平台代号：未显式配置 soc_platform 时回退 board——高通/联发科 ROM 上
+        // ro.board.platform 与 ro.product.board 绝大多数情况同值，这样只填
+        // board 也能覆盖游戏读取的 ro.board.platform。soc_platform 显式设为
+        // __DELETE__ 时尊重删除语义，不回退。
+        let platform = if merged.soc_platform.as_deref() == Some("__DELETE__") {
+            None
+        } else {
+            field_value(&merged.soc_platform).or_else(|| field_value(&merged.board))
+        };
+        if let Some(platform) = platform {
+            insert_soc_family(&mut map, SOC_PLATFORM_KEYS, &platform);
+        }
+
+        if let Some(soc_manufacturer) = field_value(&merged.soc_manufacturer) {
+            insert_soc_family(&mut map, SOC_MANUFACTURER_KEYS, &soc_manufacturer);
         }
 
         if let Some(fingerprint) = field_value(&merged.fingerprint) {
@@ -621,6 +701,23 @@ impl Config {
         if merged.board.as_ref().is_some_and(|s| s == "__DELETE__") {
             delete_props.push("ro.product.board".to_string());
         }
+        if merged.soc_model.as_ref().is_some_and(|s| s == "__DELETE__") {
+            delete_soc_family(&mut delete_props, SOC_MODEL_KEYS);
+        }
+        if merged
+            .soc_platform
+            .as_ref()
+            .is_some_and(|s| s == "__DELETE__")
+        {
+            delete_soc_family(&mut delete_props, SOC_PLATFORM_KEYS);
+        }
+        if merged
+            .soc_manufacturer
+            .as_ref()
+            .is_some_and(|s| s == "__DELETE__")
+        {
+            delete_soc_family(&mut delete_props, SOC_MANUFACTURER_KEYS);
+        }
 
         if let Some(custom_props) = &merged.custom_props {
             for (key, value) in custom_props {
@@ -647,6 +744,10 @@ pub struct MergedAppConfig {
     pub hardware: Option<String>,
     pub board: Option<String>,
     pub soc_model: Option<String>,
+    /// SoC 平台代号 → ro.board.platform 平台族
+    pub soc_platform: Option<String>,
+    /// SoC 厂商 → ro.soc.manufacturer
+    pub soc_manufacturer: Option<String>,
     pub fingerprint: Option<String>,
     pub build_id: Option<String>,
     /// 系统版本号 → Build.DISPLAY + ro.build.display.id
@@ -708,6 +809,17 @@ impl MergedAppConfig {
             && let Some(product) = self.product.as_ref().filter(|value| !value.is_empty())
         {
             self.device = Some(product.clone());
+        }
+
+        // SoC 平台代号缺省回退 board：ro.board.platform 与 ro.product.board 在
+        // 高通/联发科 ROM 上通常同值，减少必须手填的字段。
+        if !has_profile_value(&self.soc_platform)
+            && let Some(board) = self
+                .board
+                .as_ref()
+                .filter(|value| !value.is_empty() && value.as_str() != "__DELETE__")
+        {
+            self.soc_platform = Some(board.clone());
         }
 
         if let Some(parts) = parsed {

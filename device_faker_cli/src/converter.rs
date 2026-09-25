@@ -80,6 +80,22 @@ const SDK_INT_KEYS: &[&str] = &[
 ];
 const HARDWARE_KEYS: &[&str] = &["ro.hardware"];
 const BOARD_KEYS: &[&str] = &["ro.product.board"];
+/// 平台代号：优先 ro.board.platform，其次厂商别名。
+const SOC_PLATFORM_KEYS: &[&str] = &[
+    "ro.board.platform",
+    "ro.mediatek.platform",
+    "ro.vendor.qti.soc_name",
+    "ro.hardware.chipname",
+    "ro.chipname",
+];
+/// 型号：优先 AOSP 标准键 ro.soc.model，其次厂商别名。
+const SOC_MODEL_KEYS: &[&str] = &[
+    "ro.soc.model",
+    "ro.vendor.soc.model",
+    "ro.vendor.qti.soc_model",
+    "ro.vendor.qti.soc_id",
+];
+const SOC_MANUFACTURER_KEYS: &[&str] = &["ro.soc.manufacturer"];
 const SECURITY_PATCH_KEYS: &[&str] = &[
     "ro.build.version.security_patch",
     "ro.system.build.version.security_patch",
@@ -116,6 +132,12 @@ struct DeviceTemplateToml {
     #[serde(skip_serializing_if = "Option::is_none")]
     board: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    soc_platform: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    soc_model: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    soc_manufacturer: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     fingerprint: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     build_id: Option<String>,
@@ -140,6 +162,9 @@ impl DeviceTemplateToml {
             || self.product.is_some()
             || self.hardware.is_some()
             || self.board.is_some()
+            || self.soc_platform.is_some()
+            || self.soc_model.is_some()
+            || self.soc_manufacturer.is_some()
             || self.fingerprint.is_some()
             || self.build_id.is_some()
             || self.security_patch.is_some()
@@ -226,6 +251,9 @@ fn build_template(properties: &BTreeMap<String, String>) -> DeviceTemplateToml {
         product: read_non_empty_property(properties, PRODUCT_KEYS),
         hardware: read_non_empty_property(properties, HARDWARE_KEYS),
         board: read_non_empty_property(properties, BOARD_KEYS),
+        soc_platform: read_non_empty_property(properties, SOC_PLATFORM_KEYS),
+        soc_model: read_non_empty_property(properties, SOC_MODEL_KEYS),
+        soc_manufacturer: read_non_empty_property(properties, SOC_MANUFACTURER_KEYS),
         fingerprint: read_non_empty_property(properties, FINGERPRINT_KEYS),
         build_id: read_non_empty_property(properties, BUILD_ID_KEYS),
         security_patch: read_non_empty_property(properties, SECURITY_PATCH_KEYS),
@@ -435,6 +463,10 @@ mod tests {
             ro.product.device=haotian
             ro.product.product=haotian
             ro.product.board=kalama
+            ro.board.platform=kalama
+            ro.soc.model=SM8650
+            ro.soc.manufacturer=Qualcomm
+            ro.hardware=qcom
             ro.build.fingerprint=Xiaomi/haotian/haotian:15/AP4A.250205.002/123456:user/release-keys
             ro.build.id=AP4A.250205.002
             ro.build.version.security_patch=2025-06-05
@@ -453,6 +485,10 @@ mod tests {
         assert_eq!(template.device.as_deref(), Some("haotian"));
         assert_eq!(template.product.as_deref(), Some("haotian"));
         assert_eq!(template.board.as_deref(), Some("kalama"));
+        assert_eq!(template.hardware.as_deref(), Some("qcom"));
+        assert_eq!(template.soc_platform.as_deref(), Some("kalama"));
+        assert_eq!(template.soc_model.as_deref(), Some("SM8650"));
+        assert_eq!(template.soc_manufacturer.as_deref(), Some("Qualcomm"));
         assert_eq!(
             template.fingerprint.as_deref(),
             Some("Xiaomi/haotian/haotian:15/AP4A.250205.002/123456:user/release-keys")
