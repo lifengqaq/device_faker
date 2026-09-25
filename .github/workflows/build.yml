@@ -81,7 +81,9 @@ jobs:
         uses: actions/upload-artifact@v6
         with:
           name: device_faker
-          path: module/
+          path: |
+            module/
+            output/
       
       - name: Upload
         if: github.event_name == 'push'
